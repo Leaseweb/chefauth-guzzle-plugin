@@ -1,0 +1,20 @@
+{
+    "name": "leaseweb/chefauth-guzzle-plugin",
+    "description": "A guzzle (v3) plugin handling all authentication for Chef server API.",
+    "homepage": "http://www.leaseweblabs.com",
+    "keywords": ["guzzle", "http", "chef"],
+    "require": {
+        "php": ">=5.3.2",
+        "guzzle/guzzle": "~3.9"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Nico Di Rocco",
+            "email": "n.dirocco@tech.leaseweb.com"
+        }
+    ],
+    "autoload": {
+      "psr-0": { "": "src/"}
+    }
+}
