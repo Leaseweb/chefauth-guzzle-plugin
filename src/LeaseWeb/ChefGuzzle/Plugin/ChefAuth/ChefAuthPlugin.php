@@ -65,6 +65,9 @@ class ChefAuthPlugin implements EventSubscriberInterface
         $request = $event['request'];
 
         if ('Guzzle\Http\Message\EntityEnclosingRequest' === get_class($request)) {
+            if (null === $request->getBody()) {
+                $request->setBody('{}');
+            }
             $hashedBody = $this->chunkedBase64Encode(Stream::getHash($request->getBody(), 'sha1', true));
         } else {
             $hashedBody = $this->sha1AndBase64Encode('');
