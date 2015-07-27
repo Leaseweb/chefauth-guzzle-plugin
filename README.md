@@ -16,9 +16,9 @@ installation
 
 First you need Guzzle, offcourse.
 
-Add the `leaseweb/chef-guzzle-plugin` as a dependency to your project:
+Add the `leaseweb/chefauth-guzzle-plugin` as a dependency to your project:
 
-    $ php composer.phar require "leaseweb/chef-guzzle-plugin":"1.0.0"
+    $ php composer.phar require "leaseweb/chefauth-guzzle-plugin":"1.0.0"
 
 Composer will install the plugin to your project's vendor/leaseweb directory.
 
