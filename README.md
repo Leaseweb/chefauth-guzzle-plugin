@@ -1,14 +1,14 @@
 leaseweb/chefauth-guzzle-plugin
 ===============================
 
-A guzzle (v3) plugin handling all authentication for Chef server API.
+A guzzle middleware handling all authentication for Chef server API.
 
 
 requirements
 ------------
 
-- PHP 5.3
-- Guzzle 3
+- PHP 7.0
+- Guzzle 6
 
 
 installation
@@ -18,7 +18,7 @@ First you need Guzzle, offcourse.
 
 Add the `leaseweb/chefauth-guzzle-plugin` as a dependency to your project:
 
-    $ php composer.phar require "leaseweb/chefauth-guzzle-plugin":"1.0.0"
+    $ php composer.phar require "leaseweb/chefauth-guzzle-plugin":"2.0.0"
 
 Composer will install the plugin to your project's vendor/leaseweb directory.
 
@@ -30,21 +30,28 @@ usage
 
 Create a new guzzle client pointing to your chef server:
 
-    // Supply your client name and location of the private key.
-    $chefAuthPlugin = new \LeaseWeb\ChefGuzzle\Plugin\ChefAuth\ChefAuthPlugin("client-name", "/tmp/client-name.pem");
+    <?php
+    require_once 'vendor/autoload.php';
 
-    // Create a new guzzle client
-    $client = new \Guzzle\Http\Client('https://manage.opscode.com');
-    $client->addSubscriber($chefAuthPlugin);
+    use GuzzleHttp\Client;
+    use GuzzleHttp\HandlerStack;
+    use GuzzleHttp\Handler\CurlHandler;
+    use LeaseWeb\ChefGuzzle\Middleware\ChefAuthMiddleware;
+
+    $handler = new CurlHandler();
+
+    $stack = HandlerStack::create($handler);
+    $stack->push(new ChefAuthMiddleware('janedoe', 'path/to/key.pem'));
+
+    $client = new Client([
+        'base_uri' => 'https://my.chef.server.com/organizations/acme',
+        'handler' => $stack
+    ]);
+
+    $environments = $client->get("/environments");
 
 
-    // Now you can make calls to the chef server
-    $response = $client->get('/organizations/my-organization/nodes')->send();
-
-    $nodes = $response->json();
-
-
-Read more about guzzle here http://guzzle3.readthedocs.org/docs.html
+Read more about guzzle here http://docs.guzzlephp.org/en/stable/index.html
 
 
 license

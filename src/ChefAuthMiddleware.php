@@ -1,18 +1,11 @@
 <?php
 
-namespace LeaseWeb\ChefGuzzle\Plugin\ChefAuth;
+namespace LeaseWeb\ChefGuzzle\Middleware;
 
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Guzzle\Common\Event;
-use Guzzle\Stream\Stream;
+use GuzzleHttp\Psr7;
+use Psr\Http\Message\RequestInterface;
 
-
-/**
- * Class ChefAuthPlugin
- *
- * @author Nico Di Rocco <n.dirocco@tech.leaseweb.com>
- */
-class ChefAuthPlugin implements EventSubscriberInterface
+class ChefAuthMiddleware
 {
     protected $clientName;
     protected $key;
@@ -55,39 +48,28 @@ class ChefAuthPlugin implements EventSubscriberInterface
         $this->clientName = $clientName;
     }
 
-    public static function getSubscribedEvents()
+    public function __invoke(callable $handler)
     {
-        return array('request.before_send' => 'onBeforeSend');
-    }
+        return function (RequestInterface $request, array $options = []) use ($handler) {
+            $hashedBody = $this->chunkedBase64Encode(hash('sha1', $request->getBody()->getContents(), true));
+            $timestamp = gmdate("Y-m-d\TH:i:s\Z");
+            $signature = $this->signRequest($request->getMethod(), $request->getUri()->getPath(), $hashedBody, $timestamp);
 
-    public function onBeforeSend(Event $event)
-    {
-        $request = $event['request'];
+            $request = $request->withHeader('Accept', 'application/json');
+            $request = $request->withHeader('Content-Type', 'application/json');
+            $request = $request->withHeader('X-Chef-Version', '0.10.8');
+            $request = $request->withHeader('X-Ops-Sign', 'version=1.0');
+            $request = $request->withHeader('X-Ops-Timestamp', $timestamp);
+            $request = $request->withHeader('X-Ops-Userid', $this->getClientName());
+            $request = $request->withHeader('X-Ops-Content-Hash', $hashedBody);
 
-        if ('Guzzle\Http\Message\EntityEnclosingRequest' === get_class($request)) {
-            if (null === $request->getBody()) {
-                $request->setBody('{}');
+            foreach (explode('\n', $signature) as $i => $chunk) {
+                $n = $i+1;
+                $request = $request->withHeader("X-Ops-Authorization-{$n}", $chunk);
             }
-            $hashedBody = $this->chunkedBase64Encode(Stream::getHash($request->getBody(), 'sha1', true));
-        } else {
-            $hashedBody = $this->sha1AndBase64Encode('');
-        }
 
-        $timestamp = gmdate("Y-m-d\TH:i:s\Z");
-
-        $request->setHeader('Accept', 'application/json');
-        $request->setHeader('Content-Type', 'application/json');
-        $request->setHeader('X-Chef-Version', '0.10.8');
-        $request->setHeader('X-Ops-Sign', 'version=1.0');
-        $request->setHeader('X-Ops-Timestamp', $timestamp);
-        $request->setHeader('X-Ops-Userid', $this->getClientName());
-        $request->setHeader('X-Ops-Content-Hash', $hashedBody);
-
-        $signature = $this->signRequest($request->getMethod(), $request->getPath(), $hashedBody, $timestamp);
-        foreach (explode('\n', $signature) as $i => $chunk) {
-            $n = $i+1;
-            $request->setHeader("X-Ops-Authorization-{$n}", $chunk);
-        }
+            return $handler($request, $options);
+        };
     }
 
     /**
