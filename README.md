@@ -8,7 +8,7 @@ requirements
 ------------
 
 - PHP 7.0
-- Guzzle 6
+- Guzzle 7
 
 
 installation
